@@ -96,6 +96,7 @@ class ScreenshotTest {
         a.savePassword(id, "secret")
         val json = a.exportJson()
         org.junit.Assert.assertFalse("password must not be exported", json.contains("secret"))
+        org.junit.Assert.assertTrue(json.contains("\"username\": \"alex\""))
         // Wipe and import into an empty install
         rule.activity.getSharedPreferences("passage", 0).edit().clear().commit()
         val b = Prefs(rule.activity)
