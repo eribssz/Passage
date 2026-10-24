@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1260" font-family="DejaVu Sans, sans-serif">
+<rect width="100%" height="100%" fill="#05080F"/>
+<text x="40" y="44" fill="#8592AD" font-size="20">App icon</text><text x="420" y="44" fill="#8592AD" font-size="20">Quick Settings — off / on</text><text x="860" y="44" fill="#8592AD" font-size="20">Status bar</text>
+<text x="40" y="90" fill="#E8EDF7" font-size="24" font-weight="bold">A · Arches (current)</text>
+<g transform="translate(40,110)"><rect width="200" height="200" rx="60" fill="#0B1222"/><g transform="scale(1.8518518518518519)"><g fill="none" stroke="#34E0A1" stroke-linecap="round">
+   <path stroke-width="5" d="M30,74 L30,52 A24,24 0 0,1 78,52 L78,74"/>
+   <path stroke-width="4" stroke-opacity=".6" d="M40,74 L40,55 A14,14 0 0,1 68,55 L68,74"/>
+   <path stroke-width="3" stroke-opacity=".3" d="M49,74 L49,58 A5,5 0 0,1 59,58 L59,74"/></g></g></g>
+<g transform="translate(262,190)"><rect x="-10" y="-10" width="116" height="116" rx="20" fill="#C9D3E3"/><rect width="96" height="96" rx="29" fill="#0B1222"/><g transform="scale(0.8888888888888888)"><g fill="none" stroke="#34E0A1" stroke-linecap="round">
+   <path stroke-width="5" d="M30,74 L30,52 A24,24 0 0,1 78,52 L78,74"/>
+   <path stroke-width="4" stroke-opacity=".6" d="M40,74 L40,55 A14,14 0 0,1 68,55 L68,74"/>
+   <path stroke-width="3" stroke-opacity=".3" d="M49,74 L49,58 A5,5 0 0,1 59,58 L59,74"/></g></g></g>
+<g transform="translate(420,150)"><rect width="200" height="96" rx="32" fill="#2A2F3A"/><g transform="translate(22,24) scale(2)"><g fill="none" stroke="#E8EDF7" stroke-width="2" stroke-linecap="round">
+   <path d="M4,20 V11 a8,8 0 0 1 16,0 V20"/><path d="M9,20 V12.5 a3,3 0 0 1 6,0 V20"/></g></g><text x="84" y="44" fill="#E8EDF7" font-size="20" font-weight="bold">Passage</text><text x="84" y="70" fill="#E8EDF7" fill-opacity=".75" font-size="17">Off</text></g>
+<g transform="translate(635,150)"><rect width="200" height="96" rx="32" fill="#34E0A1"/><g transform="translate(22,24) scale(2)"><g fill="none" stroke="#04140D" stroke-width="2" stroke-linecap="round">
+   <path d="M4,20 V11 a8,8 0 0 1 16,0 V20"/><path d="M9,20 V12.5 a3,3 0 0 1 6,0 V20"/></g></g><text x="84" y="44" fill="#04140D" font-size="20" font-weight="bold">Passage</text><text x="84" y="70" fill="#04140D" fill-opacity=".75" font-size="17">Acme HQ</text></g>
+<g transform="translate(860,178)"><rect width="180" height="40" rx="8" fill="#000"/><text x="12" y="28" fill="#fff" font-size="20">14:35</text><g transform="translate(120,9) scale(0.95)"><g fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round">
+   <path d="M4,20 V11 a8,8 0 0 1 16,0 V20"/><path d="M9,20 V12.5 a3,3 0 0 1 6,0 V20"/></g></g></g>
+<text x="40" y="390" fill="#E8EDF7" font-size="24" font-weight="bold">B · Doorway</text>
+<g transform="translate(40,410)"><rect width="200" height="200" rx="60" fill="#0B1222"/><g transform="scale(1.8518518518518519)"><path d="M33,78 V52 a21,21 0 0 1 42,0 V78" fill="none" stroke="#34E0A1" stroke-width="6" stroke-linecap="round"/>
+   <circle cx="54" cy="56" r="6.5" fill="#34E0A1"/><path d="M54,60 V70" stroke="#34E0A1" stroke-width="6" stroke-linecap="round"/>
+   <path d="M24,78 H84" stroke="#34E0A1" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/></g></g>
+<g transform="translate(262,490)"><rect x="-10" y="-10" width="116" height="116" rx="20" fill="#C9D3E3"/><rect width="96" height="96" rx="29" fill="#0B1222"/><g transform="scale(0.8888888888888888)"><path d="M33,78 V52 a21,21 0 0 1 42,0 V78" fill="none" stroke="#34E0A1" stroke-width="6" stroke-linecap="round"/>
+   <circle cx="54" cy="56" r="6.5" fill="#34E0A1"/><path d="M54,60 V70" stroke="#34E0A1" stroke-width="6" stroke-linecap="round"/>
+   <path d="M24,78 H84" stroke="#34E0A1" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/></g></g>
+<g transform="translate(420,450)"><rect width="200" height="96" rx="32" fill="#2A2F3A"/><g transform="translate(22,24) scale(2)"><path d="M5,21 V11 a7,7 0 0 1 14,0 V21" fill="none" stroke="#E8EDF7" stroke-width="2.2" stroke-linecap="round"/>
+   <circle cx="12" cy="12" r="2.4" fill="#E8EDF7"/><path d="M12,13 V17" stroke="#E8EDF7" stroke-width="2.2" stroke-linecap="round"/></g><text x="84" y="44" fill="#E8EDF7" font-size="20" font-weight="bold">Passage</text><text x="84" y="70" fill="#E8EDF7" fill-opacity=".75" font-size="17">Off</text></g>
+<g transform="translate(635,450)"><rect width="200" height="96" rx="32" fill="#34E0A1"/><g transform="translate(22,24) scale(2)"><path d="M5,21 V11 a7,7 0 0 1 14,0 V21" fill="none" stroke="#04140D" stroke-width="2.2" stroke-linecap="round"/>
+   <circle cx="12" cy="12" r="2.4" fill="#04140D"/><path d="M12,13 V17" stroke="#04140D" stroke-width="2.2" stroke-linecap="round"/></g><text x="84" y="44" fill="#04140D" font-size="20" font-weight="bold">Passage</text><text x="84" y="70" fill="#04140D" fill-opacity=".75" font-size="17">Acme HQ</text></g>
+<g transform="translate(860,478)"><rect width="180" height="40" rx="8" fill="#000"/><text x="12" y="28" fill="#fff" font-size="20">14:35</text><g transform="translate(120,9) scale(0.95)"><path d="M5,21 V11 a7,7 0 0 1 14,0 V21" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+   <circle cx="12" cy="12" r="2.4" fill="#FFFFFF"/><path d="M12,13 V17" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/></g></g>
+<text x="40" y="690" fill="#E8EDF7" font-size="24" font-weight="bold">C · Route</text>
+<g transform="translate(40,710)"><rect width="200" height="200" rx="60" fill="#0B1222"/><g transform="scale(1.8518518518518519)"><g fill="none" stroke="#34E0A1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M38,76 V40 a4,4 0 0 1 4,-4 H58 a14,14 0 0 1 0,28 H50"/></g>
+   <circle cx="38" cy="78" r="7" fill="#0B1222" stroke="#34E0A1" stroke-width="5"/>
+   <circle cx="47" cy="64" r="6" fill="#34E0A1"/></g></g>
+<g transform="translate(262,790)"><rect x="-10" y="-10" width="116" height="116" rx="20" fill="#C9D3E3"/><rect width="96" height="96" rx="29" fill="#0B1222"/><g transform="scale(0.8888888888888888)"><g fill="none" stroke="#34E0A1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M38,76 V40 a4,4 0 0 1 4,-4 H58 a14,14 0 0 1 0,28 H50"/></g>
+   <circle cx="38" cy="78" r="7" fill="#0B1222" stroke="#34E0A1" stroke-width="5"/>
+   <circle cx="47" cy="64" r="6" fill="#34E0A1"/></g></g>
+<g transform="translate(420,750)"><rect width="200" height="96" rx="32" fill="#2A2F3A"/><g transform="translate(22,24) scale(2)"><g fill="none" stroke="#E8EDF7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M7,18.5 V5 H14 a5.5,5.5 0 0 1 0,11 H11"/></g>
+   <circle cx="7" cy="19.5" r="2.4" fill="none" stroke="#E8EDF7" stroke-width="2"/><circle cx="10.5" cy="16" r="2" fill="#E8EDF7"/></g><text x="84" y="44" fill="#E8EDF7" font-size="20" font-weight="bold">Passage</text><text x="84" y="70" fill="#E8EDF7" fill-opacity=".75" font-size="17">Off</text></g>
+<g transform="translate(635,750)"><rect width="200" height="96" rx="32" fill="#34E0A1"/><g transform="translate(22,24) scale(2)"><g fill="none" stroke="#04140D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M7,18.5 V5 H14 a5.5,5.5 0 0 1 0,11 H11"/></g>
+   <circle cx="7" cy="19.5" r="2.4" fill="none" stroke="#04140D" stroke-width="2"/><circle cx="10.5" cy="16" r="2" fill="#04140D"/></g><text x="84" y="44" fill="#04140D" font-size="20" font-weight="bold">Passage</text><text x="84" y="70" fill="#04140D" fill-opacity=".75" font-size="17">Acme HQ</text></g>
+<g transform="translate(860,778)"><rect width="180" height="40" rx="8" fill="#000"/><text x="12" y="28" fill="#fff" font-size="20">14:35</text><g transform="translate(120,9) scale(0.95)"><g fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M7,18.5 V5 H14 a5.5,5.5 0 0 1 0,11 H11"/></g>
+   <circle cx="7" cy="19.5" r="2.4" fill="none" stroke="#FFFFFF" stroke-width="2"/><circle cx="10.5" cy="16" r="2" fill="#FFFFFF"/></g></g>
+<text x="40" y="990" fill="#E8EDF7" font-size="24" font-weight="bold">D · Through the wall</text>
+<g transform="translate(40,1010)"><rect width="200" height="200" rx="60" fill="#0B1222"/><g transform="scale(1.8518518518518519)"><g stroke-linecap="round"><path d="M58,26 V44 M58,64 V82" stroke="#34E0A1" stroke-opacity=".45" stroke-width="7"/>
+   <path d="M26,54 H78" stroke="#34E0A1" stroke-width="6"/>
+   <path d="M70,45 L80,54 L70,63" fill="none" stroke="#34E0A1" stroke-width="6" stroke-linejoin="round"/>
+   <circle cx="28" cy="54" r="6" fill="#34E0A1"/></g></g></g>
+<g transform="translate(262,1090)"><rect x="-10" y="-10" width="116" height="116" rx="20" fill="#C9D3E3"/><rect width="96" height="96" rx="29" fill="#0B1222"/><g transform="scale(0.8888888888888888)"><g stroke-linecap="round"><path d="M58,26 V44 M58,64 V82" stroke="#34E0A1" stroke-opacity=".45" stroke-width="7"/>
+   <path d="M26,54 H78" stroke="#34E0A1" stroke-width="6"/>
+   <path d="M70,45 L80,54 L70,63" fill="none" stroke="#34E0A1" stroke-width="6" stroke-linejoin="round"/>
+   <circle cx="28" cy="54" r="6" fill="#34E0A1"/></g></g></g>
+<g transform="translate(420,1050)"><rect width="200" height="96" rx="32" fill="#2A2F3A"/><g transform="translate(22,24) scale(2)"><g stroke-linecap="round"><path d="M15,3 V8.5 M15,15.5 V21" stroke="#E8EDF7" stroke-width="2.4"/>
+   <path d="M4,12 H20" stroke="#E8EDF7" stroke-width="2.2"/>
+   <path d="M17,8.5 L20.5,12 L17,15.5" fill="none" stroke="#E8EDF7" stroke-width="2.2" stroke-linejoin="round"/>
+   <circle cx="4.5" cy="12" r="2.2" fill="#E8EDF7"/></g></g><text x="84" y="44" fill="#E8EDF7" font-size="20" font-weight="bold">Passage</text><text x="84" y="70" fill="#E8EDF7" fill-opacity=".75" font-size="17">Off</text></g>
+<g transform="translate(635,1050)"><rect width="200" height="96" rx="32" fill="#34E0A1"/><g transform="translate(22,24) scale(2)"><g stroke-linecap="round"><path d="M15,3 V8.5 M15,15.5 V21" stroke="#04140D" stroke-width="2.4"/>
+   <path d="M4,12 H20" stroke="#04140D" stroke-width="2.2"/>
+   <path d="M17,8.5 L20.5,12 L17,15.5" fill="none" stroke="#04140D" stroke-width="2.2" stroke-linejoin="round"/>
+   <circle cx="4.5" cy="12" r="2.2" fill="#04140D"/></g></g><text x="84" y="44" fill="#04140D" font-size="20" font-weight="bold">Passage</text><text x="84" y="70" fill="#04140D" fill-opacity=".75" font-size="17">Acme HQ</text></g>
+<g transform="translate(860,1078)"><rect width="180" height="40" rx="8" fill="#000"/><text x="12" y="28" fill="#fff" font-size="20">14:35</text><g transform="translate(120,9) scale(0.95)"><g stroke-linecap="round"><path d="M15,3 V8.5 M15,15.5 V21" stroke="#FFFFFF" stroke-width="2.4"/>
+   <path d="M4,12 H20" stroke="#FFFFFF" stroke-width="2.2"/>
+   <path d="M17,8.5 L20.5,12 L17,15.5" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linejoin="round"/>
+   <circle cx="4.5" cy="12" r="2.2" fill="#FFFFFF"/></g></g></g>
+</svg>
