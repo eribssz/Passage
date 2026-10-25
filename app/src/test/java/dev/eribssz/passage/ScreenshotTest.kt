@@ -42,8 +42,8 @@ class ScreenshotTest {
             Endpoint("198.51.100.7", 10443)), pins = mapOf("203.0.113.10:4433" to "AB12".repeat(16))))
         prefs.save(Profile(name = "Home lab", servers = listOf(Endpoint("vpn.example.com", 443)), username = "alex"))
         prefs.setActive(p.id)
+        rule.mainClock.autoAdvance = false   // the connecting animation never goes idle
         rule.setContent { PassageApp(prefs, onConnect = {}, onDisconnect = {}) }
-        rule.mainClock.autoAdvance = false
         rule.mainClock.advanceTimeBy(1700)
         return prefs
     }
@@ -82,8 +82,8 @@ class ScreenshotTest {
 
     @Test fun welcome() {
         VpnController.set(VpnState.Idle())
-        rule.setContent { PassageApp(Prefs(rule.activity), onConnect = {}, onDisconnect = {}) }
         rule.mainClock.autoAdvance = false
+        rule.setContent { PassageApp(Prefs(rule.activity), onConnect = {}, onDisconnect = {}) }
         rule.mainClock.advanceTimeBy(1700)
         capture("0-welcome")
     }
@@ -112,7 +112,11 @@ class ScreenshotTest {
         assertEquals(1, b.importJson(json)); assertEquals(1, b.profiles().size)
     }
 
-    @Test fun busy() { setup(VpnState.Busy("Signing in", "203.0.113.11:4433")); capture("2-connecting") }
+    @Test fun busy() {
+        setup(VpnState.Busy("Signing in", "203.0.113.11:4433"))
+        capture("2-connecting")                          // line partway along the P
+        rule.mainClock.advanceTimeBy(400); capture("2b-connecting")
+    }
 
     @Test fun connected() {
         setup(VpnState.Connected(

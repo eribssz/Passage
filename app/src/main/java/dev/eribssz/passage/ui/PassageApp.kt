@@ -46,6 +46,15 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.vector.PathParser
+import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.sin
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -230,6 +239,14 @@ private fun Header(onLog: () -> Unit, onSettings: () -> Unit, settingsEnabled: B
     }
 }
 
+/** The "Route" P from the app icon, in its 108-unit icon grid. Drawn from the start node to the end node. */
+private const val P_PATH = "M38,76 V40 A4,4 0 0,1 42,36 H58 A14,14 0 0,1 58,64 H50"
+private val P_START = Offset(38f, 78f)
+private val P_END = Offset(47f, 64f)
+private val P_CENTER = Offset(51.5f, 60f)
+
+private fun smooth(t: Float): Float { val x = t.coerceIn(0f, 1f); return x * x * (3 - 2 * x) }
+
 @Composable
 private fun Orb(state: VpnState, color: Color, onClick: () -> Unit) {
     val busy = state is VpnState.Busy || state is VpnState.NeedsCert || state is VpnState.NeedsCode
@@ -241,6 +258,31 @@ private fun Orb(state: VpnState, color: Color, onClick: () -> Unit) {
     val src = remember { MutableInteractionSource() }
     val pressed by src.collectIsPressedAsState()
     val press by animateFloatAsState(if (pressed) 0.94f else 1f, label = "press")
+
+    // Connecting: the line travels from the start node to the end node, over and over.
+    val cycle = remember { Animatable(0f) }
+    val lastDraw = remember { floatArrayOf(0f) }
+    LaunchedEffect(busy) {
+        if (busy) {
+            cycle.snapTo(0f)
+            while (true) { cycle.animateTo(1f, tween(1325, easing = LinearEasing)); cycle.snapTo(0f) }
+        }
+    }
+    // Connected: finish the line from wherever it was, then pop the end node.
+    val finish = remember { Animatable(if (connected) 1f else 0f) }
+    val pop = remember { Animatable(1f) }
+    LaunchedEffect(connected) {
+        if (connected) {
+            finish.snapTo(lastDraw[0])
+            pop.snapTo(0f)
+            launch { finish.animateTo(1f, tween(420, easing = FastOutSlowInEasing)) }
+            pop.animateTo(1f, tween(750))
+        } else finish.snapTo(0f)
+    }
+
+    val glyph = remember { PathParser().parsePathString(P_PATH).toPath() }
+    val measure = remember { PathMeasure().apply { setPath(glyph, false) } }
+    val part = remember { Path() }
 
     Box(
         Modifier.size(240.dp).scale(press).clip(CircleShape)
@@ -257,14 +299,50 @@ private fun Orb(state: VpnState, color: Color, onClick: () -> Unit) {
             val sz = Size(ringR * 2, ringR * 2)
             if (busy) drawArc(color, spin, 110f, false, tl, sz, style = Stroke(sw * 1.4f, cap = StrokeCap.Round))
             if (connected) drawCircle(color, ringR, style = Stroke(sw * 1.4f))
-            drawCircle(Brush.verticalGradient(listOf(Color(0xFF18233B), Color(0xFF0C1322)),
+            val discTop = Color(0xFF18233B); val discBottom = Color(0xFF0C1322)
+            drawCircle(Brush.verticalGradient(listOf(discTop, discBottom),
                 startY = center.y - r * 0.6f, endY = center.y + r * 0.6f), r * 0.6f)
             drawCircle(Color.White.copy(alpha = 0.04f), r * 0.6f, style = Stroke(1.dp.toPx()))
-            val ir = r * 0.19f
-            val isw = 5.dp.toPx()
-            drawArc(color, -60f, 300f, false, Offset(center.x - ir, center.y - ir), Size(ir * 2, ir * 2),
-                style = Stroke(isw, cap = StrokeCap.Round))
-            drawLine(color, Offset(center.x, center.y - ir * 1.3f), Offset(center.x, center.y - ir * 0.25f), isw, StrokeCap.Round)
+
+            // How much of the P is lit, and how bright.
+            val (draw, fade) = when {
+                connected -> finish.value to 1f
+                busy -> {
+                    val c = cycle.value
+                    smooth(c / 0.72f) to (1f - ((c - 0.79f) / 0.19f).coerceIn(0f, 1f))
+                }
+                else -> 0f to 0f
+            }
+            if (busy) lastDraw[0] = draw * fade
+            val len = measure.length
+            val s = r * 0.0111f
+            withTransform({
+                translate(center.x - P_CENTER.x * s, center.y - P_CENTER.y * s)
+                scale(s, s, Offset.Zero)
+            }) {
+                val line = Stroke(6f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                drawPath(glyph, color.copy(alpha = if (busy || connected) 0.22f else 1f), style = line)
+                if (draw > 0.002f && fade > 0f) {
+                    part.reset()
+                    measure.getSegment(0f, len * draw, part, true)
+                    drawPath(part, color.copy(alpha = fade), style = line)
+                    if (busy && draw < 0.985f) drawCircle(Color.White.copy(alpha = 0.85f * fade), 1.6f, measure.getPosition(len * draw))
+                }
+                // Start node: you. Ripples while connecting.
+                drawCircle(Color(0xFF111A2D), 7f, P_START)
+                drawCircle(color, 7f, P_START, style = Stroke(5f))
+                if (busy) {
+                    val rp = cycle.value
+                    drawCircle(color.copy(alpha = 0.55f * (1 - rp)), 7f + 9f * rp, P_START, style = Stroke(2f))
+                }
+                // End node: the network. Lights when the line reaches it; pops on connect.
+                val arrived = draw > 0.985f
+                val p = pop.value
+                val er = if (connected) 6f * (1 + 0.45f * sin(PI.toFloat() * p)) else if (arrived) 7.2f else 6f
+                val ea = when { connected -> 1f; busy -> if (arrived) fade else 0.22f; else -> 1f }
+                drawCircle(color.copy(alpha = ea), er, P_END)
+                if (connected && p < 1f) drawCircle(color.copy(alpha = 0.6f * (1 - p)), 6f + 14f * p, P_END, style = Stroke(2f))
+            }
         }
     }
 }
