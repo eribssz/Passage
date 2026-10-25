@@ -1,0 +1,66 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # The signing key never lives in the repo: it comes from two repo secrets.
+      #   PASSAGE_KEYSTORE_B64  – keys/passage.jks, base64-encoded
+      #   PASSAGE_KS_PASS       – the keystore / key password
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.PASSAGE_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Secret PASSAGE_KEYSTORE_B64 is not set — add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/passage.jks"
+
+      - name: Test core and build release APK
+        env:
+          PASSAGE_KEYSTORE: ${{ runner.temp }}/passage.jks
+          PASSAGE_KS_PASS: ${{ secrets.PASSAGE_KS_PASS }}
+        run: |
+          chmod +x gradlew
+          ./gradlew :core:test :app:assembleRelease --stacktrace
+          VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p out
+          cp app/build/outputs/apk/release/app-release.apk out/Passage.apk
+
+      - name: Remove signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/passage.jks"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Passage-apk
+          path: out/Passage.apk
+
+      # A GitHub Release gives a plain download link that's easy to open on a phone.
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Passage ${{ env.VERSION }} (build ${{ github.run_number }})
+          files: out/Passage.apk
+          make_latest: true

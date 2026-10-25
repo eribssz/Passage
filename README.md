@@ -30,6 +30,10 @@ Passage implements the SSL-VPN protocol in Kotlin (`core/`): it signs in at
 Release signing reads `PASSAGE_KEYSTORE` / `PASSAGE_KS_PASS` (defaults to `keys/passage.jks`,
 which is not in the repo).
 
+Every push to `main` builds a signed APK in GitHub Actions and publishes it under
+[Releases](../../releases/latest). The workflow needs two repository secrets:
+`PASSAGE_KEYSTORE_B64` (the keystore, base64-encoded) and `PASSAGE_KS_PASS`.
+
 ## Disclaimer
 
 Passage is an independent project. It is not affiliated with, endorsed by or supported by
