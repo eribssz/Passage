@@ -44,7 +44,7 @@ jobs:
           VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           mkdir -p out
-          cp app/build/outputs/apk/release/app-release.apk out/Passage.apk
+          cp app/build/outputs/apk/release/app-release.apk "out/Passage-$VERSION.apk"
 
       - name: Remove signing key
         if: always()
@@ -53,8 +53,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Passage-apk
-          path: out/Passage.apk
+          name: Passage-${{ env.VERSION }}
+          path: out/Passage-${{ env.VERSION }}.apk
 
       # A GitHub Release gives a plain download link that's easy to open on a phone.
       - name: Publish release
@@ -62,5 +62,5 @@ jobs:
         with:
           tag_name: build-${{ github.run_number }}
           name: Passage ${{ env.VERSION }} (build ${{ github.run_number }})
-          files: out/Passage.apk
+          files: out/Passage-${{ env.VERSION }}.apk
           make_latest: true
