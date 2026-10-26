@@ -650,21 +650,28 @@ private fun ConnectedWide(c: VpnState.Connected, t: Traffic, tp: Throughput, cha
     val shape = RoundedCornerShape(22.dp)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Column(Modifier.fillMaxWidth().clip(shape).background(Pal.Surface).border(1.dp, Pal.Line, shape)) {
-            Row(Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Label("Throughput · 60 s")
-                Spacer(Modifier.weight(1f))
-                Text("↓ ${rate(tp.current.down)}", color = Pal.Mint, fontFamily = Mono, fontSize = 14.sp)
-                Spacer(Modifier.width(14.dp))
-                Text("↑ ${rate(tp.current.up)}", color = Pal.Sky, fontFamily = Mono, fontSize = 14.sp)
+            BoxWithConstraints(Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp)) {
+                val rates: @Composable () -> Unit = {
+                    Row {
+                        Text("↓ ${rate(tp.current.down)}", color = Pal.Mint, fontFamily = Mono, fontSize = 14.sp, maxLines = 1, softWrap = false)
+                        Spacer(Modifier.width(14.dp))
+                        Text("↑ ${rate(tp.current.up)}", color = Pal.Sky, fontFamily = Mono, fontSize = 14.sp, maxLines = 1, softWrap = false)
+                    }
+                }
+                // Narrow cards (phones in landscape): rates go under the title instead of beside it.
+                if (maxWidth < 420.dp) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { Label("Throughput · 60 s"); rates() }
+                else Row(verticalAlignment = Alignment.CenterVertically) {
+                    Label("Throughput · 60 s"); Spacer(Modifier.weight(1f)); rates()
+                }
             }
             ThroughputChart(tp.samples, Modifier.fillMaxWidth().height(chartHeight).padding(top = 10.dp))
             HorizontalDivider(color = Pal.Line, thickness = 1.dp)
             Row(Modifier.height(IntrinsicSize.Min)) {
-                FooterStat("Down total", bytes(t.down), Modifier.weight(1f))
+                FooterStat("Down", bytes(t.down), Modifier.weight(1f))
                 VerticalDivider(color = Pal.Line, thickness = 1.dp)
-                FooterStat("Up total", bytes(t.up), Modifier.weight(1f))
+                FooterStat("Up", bytes(t.up), Modifier.weight(1f))
                 VerticalDivider(color = Pal.Line, thickness = 1.dp)
-                FooterStat("Peak down", rate(tp.peakDown), Modifier.weight(1f))
+                FooterStat("Peak", rate(tp.peakDown), Modifier.weight(1f))
             }
         }
         val endpoint = when {
@@ -719,19 +726,19 @@ private fun Tile(label: String, value: String, modifier: Modifier, mono: Boolean
 
 /** One line that shrinks (down to 11sp) instead of wrapping, for addresses on narrow screens. */
 @Composable
-private fun FitText(value: String, mono: Boolean) {
-    var size by remember(value) { mutableStateOf(14f) }
+private fun FitText(value: String, mono: Boolean, start: Float = 14f, min: Float = 11f) {
+    var size by remember(value) { mutableStateOf(start) }
     Text(value, color = Pal.Text, fontSize = size.sp, fontFamily = if (mono) Mono else null,
-        maxLines = 1, softWrap = false,
-        onTextLayout = { if (it.hasVisualOverflow && size > 11f) size -= 0.5f })
+        maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
+        onTextLayout = { if (it.hasVisualOverflow && size > min) size -= 0.5f })
 }
 
 @Composable
 private fun FooterStat(label: String, value: String, modifier: Modifier) {
-    Column(modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
+    Column(modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
         Label(label)
         Spacer(Modifier.height(4.dp))
-        Text(value, color = Pal.Text, fontSize = 16.sp, fontWeight = FontWeight.Medium, fontFamily = Mono, maxLines = 1)
+        FitText(value, mono = true, start = 16f, min = 11f)
     }
 }
 
