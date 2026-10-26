@@ -9,7 +9,6 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onNodeWithContentDescription
 import dev.eribssz.passage.core.CertInfo
 import dev.eribssz.passage.core.Endpoint
@@ -156,7 +155,6 @@ class ScreenshotTest {
     @Test @Config(qualifiers = "w740dp-h340dp-land-xxhdpi")
     fun connectedNarrowPhoneLandscape() {
         setup(sampleConnected, Traffic(9_300, 22_300), sampleThroughput)
-        rule.onAllNodesWithText("Tunnel IP")[0].performScrollTo()
         capture("9-connected-narrow-land")
     }
 
