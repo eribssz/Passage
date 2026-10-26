@@ -132,8 +132,7 @@ fun PassageApp(
             }
         }
         val header: @Composable () -> Unit = {
-            Header(onLog = { showLog = true }, onSettings = { reload(); showGateways = true },
-                settingsEnabled = state is VpnState.Idle)
+            Header(onLog = { showLog = true }, onSettings = { reload(); showGateways = true })
         }
 
         /** The cards under (portrait) or beside (landscape) the orb. */
@@ -245,7 +244,7 @@ fun PassageApp(
                     onCancel = { VpnController.codeQueue.offer(""); onDisconnect() })
             }
             if (showGateways) {
-                GatewaysSheet(profiles, profile.id, onAddTile = onAddTile,
+                GatewaysSheet(profiles, profile.id, locked = state !is VpnState.Idle, onAddTile = onAddTile,
                     onExport = { showGateways = false; onExport() }, onImport = { showGateways = false; onImport() },
                     onDismiss = { showGateways = false },
                     onSelect = { prefs.setActive(it.id); reload(); showGateways = false },
@@ -275,14 +274,12 @@ fun PassageApp(
 
 
 @Composable
-private fun Header(onLog: () -> Unit, onSettings: () -> Unit, settingsEnabled: Boolean) {
+private fun Header(onLog: () -> Unit, onSettings: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text("passage", color = Pal.Text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp)
         Spacer(Modifier.weight(1f))
         IconButton(onClick = onLog) { Icon(Icons.Default.List, "Activity", tint = Pal.Muted) }
-        IconButton(onClick = onSettings, enabled = settingsEnabled) {
-            Icon(Icons.Default.Settings, "Gateway settings", tint = if (settingsEnabled) Pal.Muted else Pal.Faint)
-        }
+        IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Gateway settings", tint = Pal.Muted) }
     }
 }
 
@@ -686,8 +683,8 @@ private fun ConnectedWide(c: VpnState.Connected, t: Traffic, tp: Throughput, cha
             c.routes.forEach { Text(it, color = Pal.Muted, fontFamily = Mono, fontSize = 13.sp, modifier = Modifier.padding(vertical = 2.dp)) }
         }
         TileRow {
-            Tile("Address", c.gateway, Modifier.weight(2f), mono = true)
-            Tile("Tunnel IP", c.ip, Modifier.weight(1f), mono = true)
+            Tile("Address", c.gateway, Modifier.weight(3f), mono = true, oneLine = true)
+            Tile("Tunnel IP", c.ip, Modifier.weight(2f), mono = true, oneLine = true)
         }
         TileRow {
             Tile("DNS", if (c.dns.isEmpty()) "From gateway" else c.dns.joinToString("\n"), Modifier.weight(1f), mono = c.dns.isNotEmpty())
@@ -707,16 +704,26 @@ private fun TileRow(content: @Composable RowScope.() -> Unit) =
 
 @Composable
 private fun Tile(label: String, value: String, modifier: Modifier, mono: Boolean = false, dim: Boolean = false,
-                 onClick: (() -> Unit)? = null) {
+                 oneLine: Boolean = false, onClick: (() -> Unit)? = null) {
     val shape = RoundedCornerShape(16.dp)
     Column(modifier.fillMaxHeight().clip(shape).background(Pal.Surface).border(1.dp, Pal.Line, shape)
         .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
         .padding(horizontal = 14.dp, vertical = 11.dp)) {
         Text(label, color = Pal.Muted, fontSize = 12.sp)
         Spacer(Modifier.height(3.dp))
-        Text(value, color = if (dim) Pal.Faint else Pal.Text, fontSize = 14.sp, fontFamily = if (mono) Mono else null,
+        if (oneLine) FitText(value, mono)
+        else Text(value, color = if (dim) Pal.Faint else Pal.Text, fontSize = 14.sp, fontFamily = if (mono) Mono else null,
             maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
+}
+
+/** One line that shrinks (down to 11sp) instead of wrapping, for addresses on narrow screens. */
+@Composable
+private fun FitText(value: String, mono: Boolean) {
+    var size by remember(value) { mutableStateOf(14f) }
+    Text(value, color = Pal.Text, fontSize = size.sp, fontFamily = if (mono) Mono else null,
+        maxLines = 1, softWrap = false,
+        onTextLayout = { if (it.hasVisualOverflow && size > 11f) size -= 0.5f })
 }
 
 @Composable
@@ -826,7 +833,7 @@ private fun LocalTextStyleMono() = MaterialTheme.typography.bodyMedium.copy(font
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GatewaysSheet(
-    profiles: List<Profile>, activeId: String, onAddTile: (() -> Unit)?, onExport: () -> Unit, onImport: () -> Unit,
+    profiles: List<Profile>, activeId: String, locked: Boolean, onAddTile: (() -> Unit)?, onExport: () -> Unit, onImport: () -> Unit,
     onDismiss: () -> Unit, onSelect: (Profile) -> Unit, onEdit: (Profile) -> Unit, onAdd: () -> Unit,
 ) {
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -834,13 +841,17 @@ private fun GatewaysSheet(
         Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 28.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Gateways", style = MaterialTheme.typography.displaySmall.copy(fontSize = 24.sp), color = Pal.Text)
+            // A dropped tunnel reconnects to the active gateway with the session's password,
+            // so switching or editing mid-session would reconnect somewhere else.
+            if (locked) Text("Disconnect to switch, add or edit gateways.", color = Pal.Amber, fontSize = 13.sp)
             profiles.forEach { p ->
                 val active = p.id == activeId
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
                         .background(if (active) Pal.Mint.copy(alpha = 0.08f) else Pal.Bg)
                         .border(1.dp, if (active) Pal.Mint.copy(alpha = 0.5f) else Pal.Line, RoundedCornerShape(16.dp))
-                        .clickable { onSelect(p) }.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
+                        .clickable(enabled = !locked) { onSelect(p) }
+                        .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = if (locked) 16.dp else 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(Modifier.size(10.dp).clip(CircleShape).background(if (active) Pal.Mint else Pal.Line))
@@ -852,16 +863,16 @@ private fun GatewaysSheet(
                                 if (p.servers.size == 1) p.servers[0].key else "${p.servers.size} addresses").joinToString(" · "),
                             color = Pal.Muted, fontSize = 13.sp, fontFamily = Mono)
                     }
-                    IconButton(onClick = { onEdit(p) }) { Icon(Icons.Default.Edit, "Edit", tint = Pal.Muted) }
+                    if (!locked) IconButton(onClick = { onEdit(p) }) { Icon(Icons.Default.Edit, "Edit", tint = Pal.Muted) }
                 }
             }
-            OutlinedButton(onClick = onAdd, modifier = Modifier.fillMaxWidth().height(50.dp),
+            if (!locked) OutlinedButton(onClick = onAdd, modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(16.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Pal.Line)) {
                 Icon(Icons.Default.Add, null, tint = Pal.Mint); Spacer(Modifier.width(8.dp))
                 Text("Add gateway", color = Pal.Text)
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(onClick = onImport, modifier = Modifier.weight(1f).height(46.dp),
+                OutlinedButton(onClick = onImport, enabled = !locked, modifier = Modifier.weight(1f).height(46.dp),
                     shape = RoundedCornerShape(14.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Pal.Line)) {
                     Text("Import", color = Pal.Muted)
                 }

@@ -9,6 +9,8 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.onNodeWithContentDescription
 import dev.eribssz.passage.core.CertInfo
 import dev.eribssz.passage.core.Endpoint
 import dev.eribssz.passage.ui.PassageApp
@@ -149,6 +151,22 @@ class ScreenshotTest {
 
     @Test @Config(qualifiers = "w891dp-h411dp-land-xxhdpi")
     fun idlePhoneLandscape() { setup(VpnState.Idle()); capture("9-idle-phone-land") }
+
+    /** A narrower phone (bigger display size): addresses must stay on one line. */
+    @Test @Config(qualifiers = "w740dp-h340dp-land-xxhdpi")
+    fun connectedNarrowPhoneLandscape() {
+        setup(sampleConnected, Traffic(9_300, 22_300), sampleThroughput)
+        rule.onAllNodesWithText("Tunnel IP")[0].performScrollTo()
+        capture("9-connected-narrow-land")
+    }
+
+    @Test fun gatewaysLockedWhileConnected() {
+        setup(sampleConnected, Traffic(48_200_000, 3_900_000))
+        rule.onNodeWithContentDescription("Gateway settings").performClick()
+        frames { rule.onAllNodesWithText("Disconnect to switch, add or edit gateways.").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(0, rule.onAllNodesWithContentDescription("Edit").fetchSemanticsNodes().size)
+        capture("10-gateways-locked")
+    }
 
     @Test fun cert() {
         setup(VpnState.NeedsCert(CertInfo("9F3A".repeat(16), "CN=FortiGate,O=Fortinet",
