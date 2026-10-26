@@ -67,11 +67,14 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.eribssz.passage.Prefs
 import dev.eribssz.passage.Profile
+import dev.eribssz.passage.Rate
+import dev.eribssz.passage.Throughput
 import dev.eribssz.passage.Traffic
 import dev.eribssz.passage.VpnController
 import dev.eribssz.passage.VpnState
@@ -98,6 +101,7 @@ fun PassageApp(
     PassageTheme {
         val state by VpnController.state.collectAsStateWithLifecycle()
         val traffic by VpnController.traffic.collectAsStateWithLifecycle()
+        val throughput by VpnController.throughput.collectAsStateWithLifecycle()
         var profiles by remember { mutableStateOf(prefs.profiles()) }
         var profile by remember { mutableStateOf(prefs.active()) }
         var password by remember(profile.id) { mutableStateOf(prefs.loadPassword(profile.id) ?: "") }
@@ -121,64 +125,107 @@ fun PassageApp(
             onConnect(password)
         }
 
+        val onOrb = {
+            when (state) {
+                is VpnState.Idle -> connect()
+                else -> onDisconnect()
+            }
+        }
+        val header: @Composable () -> Unit = {
+            Header(onLog = { showLog = true }, onSettings = { reload(); showGateways = true },
+                settingsEnabled = state is VpnState.Idle)
+        }
+
+        /** The cards under (portrait) or beside (landscape) the orb. */
+        @Composable
+        fun Body(chartHeight: Dp?) {
+            AnimatedContent(
+                targetState = when (state) {
+                    is VpnState.Connected -> 2
+                    is VpnState.Idle -> 0
+                    else -> 1
+                },
+                transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) },
+                label = "body",
+            ) { which ->
+                when (which) {
+                    0 -> if (profile.isNone) WelcomeCard(onAdd = { editing = Profile() }, onImport = onImport)
+                    else SignInCard(profile, profiles.size, password, { password = it },
+                        onRemember = { r ->
+                            prefs.save(profile.copy(rememberPassword = r)); reload()
+                        },
+                        onPickGateway = { reload(); showGateways = true },
+                        onPickAddress = { reload(); pickAddress = true },
+                        onConnect = ::connect)
+                    1 -> ProgressCard(state as? VpnState.Busy, profile.servers.size, onCancel = onDisconnect)
+                    else -> (state as? VpnState.Connected)?.let {
+                        if (chartHeight == null) ConnectedCard(it, traffic, onDisconnect)
+                        else ConnectedWide(it, traffic, throughput, chartHeight, onDisconnect)
+                    }
+                }
+            }
+        }
+
         Box(
             Modifier
                 .fillMaxSize()
                 .background(Pal.Bg)
                 .drawBehind {
+                    // Landscape: the glow sits behind the orb in the left half.
+                    val wide = size.width > size.height
                     drawRect(Brush.radialGradient(
                         listOf(color.copy(alpha = 0.16f), Color.Transparent),
-                        center = Offset(size.width / 2, size.height * 0.2f),
-                        radius = size.maxDimension * 0.6f,
+                        center = if (wide) Offset(size.width * 0.25f, size.height * 0.45f)
+                        else Offset(size.width / 2, size.height * 0.2f),
+                        radius = size.maxDimension * (if (wide) 0.4f else 0.6f),
                     ))
                 },
         ) {
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .systemBarsPadding()
-                    .imePadding()
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Column(Modifier.widthIn(max = 520.dp).fillMaxWidth().padding(horizontal = 20.dp)) {
-                    Header(onLog = { showLog = true }, onSettings = { reload(); showGateways = true },
-                        settingsEnabled = state is VpnState.Idle)
-                    Spacer(Modifier.height(12.dp))
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Orb(state, color) {
-                            when (state) {
-                                is VpnState.Idle -> connect()
-                                else -> onDisconnect()
+            BoxWithConstraints(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
+                if (maxWidth > maxHeight) {
+                    // Landscape (tablets and phones): orb on the left, everything else on the right.
+                    val area = maxHeight - 64.dp
+                    Column(Modifier.fillMaxSize()) {
+                        Box(Modifier.padding(horizontal = 24.dp)) { header() }
+                        Row(Modifier.fillMaxSize()) {
+                            BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
+                                val h = maxHeight
+                                Column(
+                                    Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                                        .heightIn(min = h).padding(bottom = 16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                ) {
+                                    Orb(state, color, diameter = (area - 120.dp).coerceIn(150.dp, 360.dp), onClick = onOrb)
+                                    StatusText(state, color, hasGateway = !profile.isNone)
+                                    (state as? VpnState.Connected)?.let { SessionClock(it.since) }
+                                }
+                            }
+                            Column(
+                                Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())
+                                    .padding(start = 8.dp, end = 32.dp, top = 4.dp, bottom = 24.dp),
+                            ) {
+                                Body(chartHeight = (area * 0.3f).coerceIn(84.dp, 240.dp))
                             }
                         }
                     }
-                    StatusText(state, color, hasGateway = !profile.isNone)
-                    Spacer(Modifier.height(28.dp))
-
-                    AnimatedContent(
-                        targetState = when (state) {
-                            is VpnState.Connected -> 2
-                            is VpnState.Idle -> 0
-                            else -> 1
-                        },
-                        transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) },
-                        label = "body",
-                    ) { which ->
-                        when (which) {
-                            0 -> if (profile.isNone) WelcomeCard(onAdd = { editing = Profile() }, onImport = onImport)
-                            else SignInCard(profile, profiles.size, password, { password = it },
-                                onRemember = { r ->
-                                    prefs.save(profile.copy(rememberPassword = r)); reload()
-                                },
-                                onPickGateway = { reload(); showGateways = true },
-                                onPickAddress = { reload(); pickAddress = true },
-                                onConnect = ::connect)
-                            1 -> ProgressCard(state as? VpnState.Busy, profile.servers.size, onCancel = onDisconnect)
-                            else -> (state as? VpnState.Connected)?.let { ConnectedCard(it, traffic, onDisconnect) }
+                } else Column(
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Column(Modifier.widthIn(max = 520.dp).fillMaxWidth().padding(horizontal = 20.dp)) {
+                        header()
+                        Spacer(Modifier.height(12.dp))
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            Orb(state, color, onClick = onOrb)
                         }
+                        StatusText(state, color, hasGateway = !profile.isNone)
+                        Spacer(Modifier.height(28.dp))
+                        Body(chartHeight = null)
+                        Spacer(Modifier.height(32.dp))
                     }
-                    Spacer(Modifier.height(32.dp))
                 }
             }
 
@@ -248,7 +295,7 @@ private val P_CENTER = Offset(51.5f, 60f)
 private fun smooth(t: Float): Float { val x = t.coerceIn(0f, 1f); return x * x * (3 - 2 * x) }
 
 @Composable
-private fun Orb(state: VpnState, color: Color, onClick: () -> Unit) {
+private fun Orb(state: VpnState, color: Color, diameter: Dp = 240.dp, onClick: () -> Unit) {
     val busy = state is VpnState.Busy || state is VpnState.NeedsCert || state is VpnState.NeedsCode
     val connected = state is VpnState.Connected
     val inf = rememberInfiniteTransition(label = "orb")
@@ -285,7 +332,7 @@ private fun Orb(state: VpnState, color: Color, onClick: () -> Unit) {
     val part = remember { Path() }
 
     Box(
-        Modifier.size(240.dp).scale(press).clip(CircleShape)
+        Modifier.size(diameter).scale(press).clip(CircleShape)
             .clickable(interactionSource = src, indication = null, onClick = onClick),
     ) {
         Canvas(Modifier.fillMaxSize()) {
@@ -582,6 +629,131 @@ private fun InfoRow(label: String, value: String, mono: Boolean = false, last: B
             modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
     }
     if (!last) HorizontalDivider(color = Pal.Line, thickness = 0.5.dp)
+}
+
+private fun rate(bps: Long): String = when {
+    bps < 1024 -> "$bps B/s"
+    bps < 1024 * 1024 -> "%.0f KB/s".format(bps / 1024.0)
+    else -> "%.2f MB/s".format(bps / 1048576.0)
+}
+
+/** Big session timer under the status in landscape. */
+@Composable
+private fun SessionClock(since: Long) {
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(since) { while (true) { now = System.currentTimeMillis(); delay(1000) } }
+    Text(duration(now - since), color = Pal.Text.copy(alpha = 0.85f), fontFamily = Mono, fontSize = 24.sp,
+        modifier = Modifier.padding(top = 10.dp))
+}
+
+/** Landscape "connected": live throughput graph with session totals, then the details as tiles. */
+@Composable
+private fun ConnectedWide(c: VpnState.Connected, t: Traffic, tp: Throughput, chartHeight: Dp, onDisconnect: () -> Unit) {
+    var showRoutes by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(22.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.fillMaxWidth().clip(shape).background(Pal.Surface).border(1.dp, Pal.Line, shape)) {
+            Row(Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Label("Throughput · 60 s")
+                Spacer(Modifier.weight(1f))
+                Text("↓ ${rate(tp.current.down)}", color = Pal.Mint, fontFamily = Mono, fontSize = 14.sp)
+                Spacer(Modifier.width(14.dp))
+                Text("↑ ${rate(tp.current.up)}", color = Pal.Sky, fontFamily = Mono, fontSize = 14.sp)
+            }
+            ThroughputChart(tp.samples, Modifier.fillMaxWidth().height(chartHeight).padding(top = 10.dp))
+            HorizontalDivider(color = Pal.Line, thickness = 1.dp)
+            Row(Modifier.height(IntrinsicSize.Min)) {
+                FooterStat("Down total", bytes(t.down), Modifier.weight(1f))
+                VerticalDivider(color = Pal.Line, thickness = 1.dp)
+                FooterStat("Up total", bytes(t.up), Modifier.weight(1f))
+                VerticalDivider(color = Pal.Line, thickness = 1.dp)
+                FooterStat("Peak ↓", rate(tp.peakDown), Modifier.weight(1f))
+            }
+        }
+        val endpoint = when {
+            c.addressCount <= 1 -> "Single"
+            c.fixed -> "Fixed"
+            else -> "Auto · ${c.addressIndex + 1} of ${c.addressCount}"
+        }
+        val routing = if (c.routes.isEmpty()) "All traffic" else "Split · ${c.routes.size} net${if (c.routes.size > 1) "s" else ""}"
+        TileRow {
+            Tile("Gateway", c.profileName, Modifier.weight(1f))
+            Tile("Endpoint", endpoint, Modifier.weight(1f))
+            Tile("Routing", routing, Modifier.weight(1f),
+                onClick = if (c.routes.isNotEmpty()) ({ showRoutes = !showRoutes }) else null)
+        }
+        if (showRoutes) Panel {
+            c.routes.forEach { Text(it, color = Pal.Muted, fontFamily = Mono, fontSize = 13.sp, modifier = Modifier.padding(vertical = 2.dp)) }
+        }
+        TileRow {
+            Tile("Address", c.gateway, Modifier.weight(2f), mono = true)
+            Tile("Tunnel IP", c.ip, Modifier.weight(1f), mono = true)
+        }
+        TileRow {
+            Tile("DNS", if (c.dns.isEmpty()) "From gateway" else c.dns.joinToString("\n"), Modifier.weight(1f), mono = c.dns.isNotEmpty())
+            Tile("FortiOS", c.fortiOs ?: "Not reported", Modifier.weight(1f), dim = c.fortiOs == null)
+            Tile("MTU", c.mtu.toString(), Modifier.weight(1f), mono = true)
+        }
+        OutlinedButton(onClick = onDisconnect, modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(16.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Pal.Coral.copy(alpha = 0.5f))) {
+            Text("Disconnect", color = Pal.Coral)
+        }
+    }
+}
+
+@Composable
+private fun TileRow(content: @Composable RowScope.() -> Unit) =
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp), content = content)
+
+@Composable
+private fun Tile(label: String, value: String, modifier: Modifier, mono: Boolean = false, dim: Boolean = false,
+                 onClick: (() -> Unit)? = null) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(modifier.fillMaxHeight().clip(shape).background(Pal.Surface).border(1.dp, Pal.Line, shape)
+        .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+        .padding(horizontal = 14.dp, vertical = 11.dp)) {
+        Text(label, color = Pal.Muted, fontSize = 12.sp)
+        Spacer(Modifier.height(3.dp))
+        Text(value, color = if (dim) Pal.Faint else Pal.Text, fontSize = 14.sp, fontFamily = if (mono) Mono else null,
+            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun FooterStat(label: String, value: String, modifier: Modifier) {
+    Column(modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
+        Label(label)
+        Spacer(Modifier.height(4.dp))
+        Text(value, color = Pal.Text, fontSize = 16.sp, fontWeight = FontWeight.Medium, fontFamily = Mono, maxLines = 1)
+    }
+}
+
+/** Download (filled, mint) and upload (line, blue) over the last minute; newest on the right. */
+@Composable
+private fun ThroughputChart(samples: List<Rate>, modifier: Modifier) {
+    Box(modifier) {
+        Canvas(Modifier.fillMaxSize()) {
+            val w = size.width; val h = size.height
+            for (i in 1..2) drawLine(Pal.Line, Offset(0f, h * i / 3), Offset(w, h * i / 3), 1.dp.toPx())
+            if (samples.size < 2) return@Canvas
+            val top = maxOf(samples.maxOf { maxOf(it.down, it.up) }, 8L * 1024) * 1.15f
+            val step = w / (Throughput.WINDOW - 1)
+            val x0 = w - step * (samples.size - 1)
+            val pad = 3.dp.toPx()
+            fun y(v: Long) = h - pad - (h - 2 * pad) * (v / top)
+            fun line(pick: (Rate) -> Long) = Path().apply {
+                samples.forEachIndexed { i, r -> if (i == 0) moveTo(x0, y(pick(r))) else lineTo(x0 + step * i, y(pick(r))) }
+            }
+            val down = line { it.down }
+            val area = Path().apply { addPath(down); lineTo(w, h); lineTo(x0, h); close() }
+            drawPath(area, Pal.Mint.copy(alpha = 0.12f))
+            val stroke = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+            drawPath(down, Pal.Mint, style = stroke)
+            drawPath(line { it.up }, Pal.Sky, style = stroke)
+        }
+        if (samples.size < 2) Text("Waiting for traffic…", color = Pal.Faint, fontSize = 13.sp,
+            modifier = Modifier.align(Alignment.Center))
+    }
 }
 
 private fun cn(dn: String) = Regex("""CN=([^,]+)""").find(dn)?.groupValues?.get(1) ?: dn

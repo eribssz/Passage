@@ -33,9 +33,10 @@ class ScreenshotTest {
         return (f.get(wmg) as List<View>).toList()
     }
 
-    private fun setup(state: VpnState, traffic: Traffic = Traffic()): Prefs {
+    private fun setup(state: VpnState, traffic: Traffic = Traffic(), throughput: Throughput? = null): Prefs {
         VpnController.set(state)
         VpnController.traffic(traffic)
+        throughput?.let { VpnController.setThroughput(it) }
         val prefs = Prefs(rule.activity)
         val p = Profile(name = "Acme HQ", username = "alex")
         prefs.save(p.copy(servers = listOf(Endpoint("203.0.113.10", 4433), Endpoint("203.0.113.11", 4433),
@@ -125,6 +126,29 @@ class ScreenshotTest {
             dns = listOf("192.168.1.2", "192.168.1.8"), mtu = 1354), Traffic(48_200_000, 3_900_000))
         capture("3-connected")
     }
+
+    private val sampleConnected get() = VpnState.Connected(
+        ip = "10.255.255.3", gateway = "203.0.113.11:4433", profileName = "Acme HQ", addressIndex = 1, addressCount = 3, fixed = false,
+        since = System.currentTimeMillis() - 3_725_000, fortiOs = null, routes = listOf("192.168.0.0/21"),
+        dns = listOf("192.168.1.2", "192.168.1.8"), mtu = 1354)
+
+    /** A minute of made-up traffic: a download ramping up with bursts, light upload. */
+    private val sampleThroughput = Throughput(List(Throughput.WINDOW) { i ->
+        val d = (200_000 + 1_100_000 * (i / 60.0) + 380_000 * kotlin.math.sin(i / 3.0) + 220_000 * kotlin.math.sin(i * 1.7)).toLong()
+        Rate(d.coerceAtLeast(30_000), (60_000 + 25_000 * kotlin.math.sin(i / 2.0)).toLong())
+    }, peakDown = 2_900_000)
+
+    @Test @Config(qualifiers = "w891dp-h411dp-land-xxhdpi")
+    fun connectedPhoneLandscape() { setup(sampleConnected, Traffic(48_200_000, 3_900_000), sampleThroughput); capture("9-connected-phone-land") }
+
+    @Test @Config(qualifiers = "w1280dp-h800dp-land-xhdpi")
+    fun connectedTabletLandscape() { setup(sampleConnected, Traffic(48_200_000, 3_900_000), sampleThroughput); capture("9-connected-tablet-land") }
+
+    @Test @Config(qualifiers = "w1280dp-h800dp-land-xhdpi")
+    fun idleTabletLandscape() { setup(VpnState.Idle()); capture("9-idle-tablet-land") }
+
+    @Test @Config(qualifiers = "w891dp-h411dp-land-xxhdpi")
+    fun idlePhoneLandscape() { setup(VpnState.Idle()); capture("9-idle-phone-land") }
 
     @Test fun cert() {
         setup(VpnState.NeedsCert(CertInfo("9F3A".repeat(16), "CN=FortiGate,O=Fortinet",

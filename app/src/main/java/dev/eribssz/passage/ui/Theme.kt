@@ -18,6 +18,7 @@ object Pal {
     val Muted = Color(0xFF8592AD)
     val Faint = Color(0xFF55617C)
     val Mint = Color(0xFF34E0A1)
+    val Sky = Color(0xFF6EA8FF)
     val Amber = Color(0xFFFFB547)
     val Coral = Color(0xFFFF6B6B)
     val Idle = Color(0xFF6F7FA3)

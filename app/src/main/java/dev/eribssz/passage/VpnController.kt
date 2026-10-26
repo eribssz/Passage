@@ -30,6 +30,15 @@ sealed interface VpnState {
 
 data class Traffic(val down: Long = 0, val up: Long = 0)
 
+/** Bytes per second over one sample interval. */
+data class Rate(val down: Long = 0, val up: Long = 0)
+
+/** The last minute of throughput samples (oldest first) and the session's peak download rate. */
+data class Throughput(val samples: List<Rate> = emptyList(), val peakDown: Long = 0) {
+    val current: Rate get() = samples.lastOrNull() ?: Rate()
+    companion object { const val WINDOW = 60 }
+}
+
 /** Shared state between the UI and the VPN service (same process). */
 object VpnController {
     private val _state = MutableStateFlow<VpnState>(VpnState.Idle())
@@ -56,7 +65,33 @@ object VpnController {
         // Wake the Quick Settings tile so it reflects the new state even when not visible.
         if (changedKind) appContext?.let { PassageTileService.refresh(it) }
     }
-    fun traffic(t: Traffic) { _traffic.value = t }
+    private val _throughput = MutableStateFlow(Throughput())
+    /** Kept here (not in the UI) so the graph survives rotation and leaving the app. */
+    val throughput: StateFlow<Throughput> = _throughput
+    private var lastTraffic: Traffic? = null
+    private var lastAt = 0L
+
+    fun traffic(t: Traffic) {
+        val now = System.currentTimeMillis()
+        val prev = lastTraffic
+        if (t.down == 0L && t.up == 0L) {
+            // A new session (or none): start the graph over.
+            lastTraffic = null
+            _throughput.value = Throughput()
+        } else {
+            if (prev != null && now > lastAt && t.down >= prev.down && t.up >= prev.up) {
+                val secs = (now - lastAt) / 1000.0
+                val r = Rate(((t.down - prev.down) / secs).toLong(), ((t.up - prev.up) / secs).toLong())
+                val cur = _throughput.value
+                _throughput.value = Throughput((cur.samples + r).takeLast(Throughput.WINDOW), maxOf(cur.peakDown, r.down))
+            }
+            lastTraffic = t; lastAt = now
+        }
+        _traffic.value = t
+    }
+
+    /** For screenshots and previews. */
+    fun setThroughput(t: Throughput) { _throughput.value = t }
 
     fun log(msg: String) {
         val line = "${fmt.format(Date())}  $msg"
