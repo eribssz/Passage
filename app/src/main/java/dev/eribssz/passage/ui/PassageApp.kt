@@ -667,7 +667,7 @@ private fun ConnectedWide(c: VpnState.Connected, t: Traffic, tp: Throughput, cha
                 VerticalDivider(color = Pal.Line, thickness = 1.dp)
                 FooterStat("Up total", bytes(t.up), Modifier.weight(1f))
                 VerticalDivider(color = Pal.Line, thickness = 1.dp)
-                FooterStat("Peak ↓", rate(tp.peakDown), Modifier.weight(1f))
+                FooterStat("Peak down", rate(tp.peakDown), Modifier.weight(1f))
             }
         }
         val endpoint = when {
