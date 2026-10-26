@@ -677,7 +677,7 @@ private fun ConnectedWide(c: VpnState.Connected, t: Traffic, tp: Throughput, cha
         val endpoint = when {
             c.addressCount <= 1 -> "Single"
             c.fixed -> "Fixed"
-            else -> "Auto · ${c.addressIndex + 1} of ${c.addressCount}"
+            else -> "Auto · ${c.addressIndex + 1}/${c.addressCount}"
         }
         val routing = if (c.routes.isEmpty()) "All traffic" else "Split · ${c.routes.size} net${if (c.routes.size > 1) "s" else ""}"
         TileRow {
