@@ -40,3 +40,7 @@ Passage is an independent project. It is not affiliated with, endorsed by or sup
 Fortinet. Fortinet, FortiGate, FortiClient, FortiOS and FortiToken are trademarks of
 Fortinet, Inc., used here only to describe compatibility. Use it only with gateways you are
 authorised to connect to, and in line with your organisation's policies.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Provided as is, without warranty of any kind.
