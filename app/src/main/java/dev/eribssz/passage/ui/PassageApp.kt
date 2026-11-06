@@ -64,6 +64,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -79,6 +81,7 @@ import dev.eribssz.passage.Traffic
 import dev.eribssz.passage.VpnController
 import dev.eribssz.passage.VpnState
 import dev.eribssz.passage.core.CertInfo
+import dev.eribssz.passage.core.AddressMask
 import dev.eribssz.passage.core.Endpoint
 import kotlinx.coroutines.delay
 import java.text.DateFormat
@@ -907,7 +910,8 @@ private fun EditorSheet(
 ) {
     var name by remember(p.id) { mutableStateOf(p.name) }
     val servers = remember(p.id) { mutableStateListOf<Endpoint>().apply { addAll(p.servers) } }
-    var newAddr by remember(p.id) { mutableStateOf("") }
+    var addrField by remember(p.id) { mutableStateOf(TextFieldValue("")) }
+    val newAddr = addrField.text
     var addrError by remember(p.id) { mutableStateOf<String?>(null) }
     var user by remember(p.id) { mutableStateOf(p.username) }
     var realm by remember(p.id) { mutableStateOf(p.realm) }
@@ -915,12 +919,12 @@ private fun EditorSheet(
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     fun addAddress(): Boolean {
-        if (newAddr.isBlank()) return true
-        val parts = newAddr.split(',', ';', ' ', '\n').filter { it.isNotBlank() }
-        val parsed = parts.map { Endpoint.parse(it) }
-        if (parsed.any { it == null }) { addrError = "Use IP:port, e.g. 203.0.113.10:4433"; return false }
-        parsed.filterNotNull().forEach { if (it !in servers) servers += it }
-        newAddr = ""; addrError = null
+        if (addrField.text.isBlank()) return true
+        val parts = addrField.text.split(',', ';', ' ', '\n').filter { it.isNotBlank() }
+        val checked = parts.map { Endpoint.check(it) }
+        checked.firstOrNull { it is String }?.let { addrError = it as String; return false }
+        checked.filterIsInstance<Endpoint>().forEach { if (it !in servers) servers += it }
+        addrField = TextFieldValue(""); addrError = null
         return true
     }
 
@@ -945,7 +949,11 @@ private fun EditorSheet(
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(newAddr, { newAddr = it; addrError = null }, singleLine = true,
+                OutlinedTextField(addrField, { v ->
+                    val masked = AddressMask.apply(addrField.text, v.text)
+                    addrField = if (masked == v.text) v else TextFieldValue(masked, TextRange(masked.length))
+                    addrError = null
+                }, singleLine = true,
                     placeholder = { Text(if (servers.isEmpty()) "IP:port" else "Add another IP:port") },
                     isError = addrError != null,
                     supportingText = addrError?.let { { Text(it) } },

@@ -9,15 +9,77 @@ data class Endpoint(val host: String, val port: Int) {
 
     companion object {
         /** "1.2.3.4:4433", "vpn.example.com" (port 443), "https://host:10443/..." */
-        fun parse(text: String): Endpoint? {
+        fun parse(text: String): Endpoint? = check(text) as? Endpoint
+
+        /** Returns an [Endpoint], or a String saying what's wrong with [text]. */
+        fun check(text: String): Any {
             var s = text.trim().removePrefix("https://").removePrefix("http://").substringBefore('/')
-            if (s.isEmpty() || s.any { it.isWhitespace() }) return null
+            if (s.isEmpty() || s.any { it.isWhitespace() }) return "Use IP:port, e.g. 203.0.113.10:4433"
+            if (s.startsWith('[') || s.count { it == ':' } > 1) return "IPv6 addresses aren't supported"
             val i = s.lastIndexOf(':')
-            val port = if (i > 0) s.substring(i + 1).toIntOrNull() ?: return null else 443
-            if (i > 0) s = s.substring(0, i)
-            if (port !in 1..65535 || s.isEmpty()) return null
-            return Endpoint(s, port)
+            val port = if (i >= 0) s.substring(i + 1).ifEmpty { "443" }.toIntOrNull() else 443
+            if (i >= 0) s = s.substring(0, i)
+            if (port == null || port !in 1..65535) return "Port must be 1–65535"
+            if (s.isEmpty()) return "Missing IP address"
+            if (s.all { it.isDigit() || it == '.' }) {
+                return if (isIpv4(s)) Endpoint(s, port) else "Not a valid IP address"
+            }
+            return if (isHostname(s)) Endpoint(s.lowercase(), port) else "Not a valid IP address or host name"
         }
+
+        fun isIpv4(s: String): Boolean {
+            val parts = s.split('.')
+            return parts.size == 4 && parts.all { p ->
+                p.length in 1..3 && p.all { it.isDigit() } && p.toInt() <= 255 && (p.length == 1 || p[0] != '0')
+            }
+        }
+
+        private val LABEL = Regex("[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?")
+
+        /** A DNS name whose last label has a letter, so all-digit junk never counts as a host. */
+        fun isHostname(s: String): Boolean {
+            val h = s.removeSuffix(".")
+            if (h.isEmpty() || h.length > 253) return false
+            val labels = h.split('.')
+            return labels.all { LABEL.matches(it) } && labels.last().any { it.isLetter() }
+        }
+    }
+}
+
+/**
+ * Typing mask for the "IP:port" field. Only acts when the user typed a single
+ * character at the end of a numeric address, so host names, pasting and
+ * backspace behave as usual.
+ *  - an octet is capped at 3 digits / 255, and a "." is added once it can't grow;
+ *  - after the 4th octet the separator is ":" (typing "." there gives ":" too);
+ *  - the port is capped at 5 digits / 65535.
+ */
+object AddressMask {
+    fun apply(old: String, new: String): String {
+        if (new.length != old.length + 1 || !new.startsWith(old)) return new
+        if (!old.all { it.isDigit() || it == '.' || it == ':' }) return new
+        val c = new.last()
+        if (!c.isDigit() && c != '.' && c != ':') return new
+        val inPort = ':' in old
+        val octets = old.substringBefore(':').split('.')
+        val cur = if (inPort) old.substringAfter(':') else octets.last()
+        val octetNo = octets.size  // 1..4 while typing the IP
+        if (inPort) {
+            if (!c.isDigit()) return old
+            val port = cur + c
+            return if (port.length > 5 || port.toInt() > 65535 || port == "0") old else new
+        }
+        if (!c.isDigit()) {
+            if (cur.isEmpty()) return old                       // no empty octets
+            return if (octetNo < 4) old + "." else old + ":"    // "." or ":" → the right separator
+        }
+        val next = cur + c
+        if (next.toInt() > 255 || (cur == "0")) {
+            // This digit can't belong here: start the next block with it.
+            return if (octetNo < 4) "$old.$c" else "$old:$c".takeIf { c != '0' } ?: old
+        }
+        val full = next.length == 3 || next.toInt() * 10 > 255 || next == "0"
+        return if (full) new + (if (octetNo < 4) "." else ":") else new
     }
 }
 
