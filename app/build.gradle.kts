@@ -48,6 +48,11 @@ kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
 }
 
+// Put the version in the APK file name, e.g. Passage-v1.4.2-release.apk.
+base {
+    archivesName.set("Passage-v${android.defaultConfig.versionName}")
+}
+
 dependencies {
     implementation(project(":core"))
     implementation(platform("androidx.compose:compose-bom:2025.10.00"))
